@@ -137,7 +137,7 @@ class WalletMonitorService(net: MessagingService, val smm: StateMachineManager, 
     fun processRegisterRequest(req: RegisterRequest) {
         try {
             listeners.add(RegisteredListener(req.replyToRecipient, req.sessionID))
-            val stateMessage = StateSnapshotMessage(services.walletService.currentWallet.states.map { it.state.data }.toList(),
+            val stateMessage = StateSnapshotMessage(services.walletService.currentWallet.states.toList(),
                     smm.allStateMachines.map { it.javaClass.name })
             net.send(net.createMessage(STATE_TOPIC, DEFAULT_SESSION_ID, stateMessage.serialize().bits), req.replyToRecipient)
 
