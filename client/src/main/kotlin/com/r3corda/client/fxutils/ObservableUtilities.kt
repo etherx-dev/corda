@@ -3,6 +3,7 @@ package com.r3corda.client.fxutils
 import javafx.beans.binding.Bindings
 import javafx.beans.property.ReadOnlyObjectWrapper
 import javafx.beans.value.ObservableValue
+import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.collections.transformation.FilteredList
 import org.fxmisc.easybind.EasyBind
@@ -102,3 +103,9 @@ fun <A, B> ObservableList<out A>.fold(initial: B, folderFunction: (B, A) -> B): 
  * val heights: ObservableList<Long> = people.map(Person::height).flatten()
  */
 fun <A> ObservableList<out ObservableValue<out A>>.flatten(): ObservableList<out A> = FlattenedList(this)
+
+/**
+ * val people: List<Person> = listOf(alice, bob)
+ * val heights: ObservableList<Long> = people.map(Person::height).sequence()
+ */
+fun <A> List<ObservableValue<out A>>.sequence(): ObservableList<out A> = FlattenedList(FXCollections.observableArrayList(this))
