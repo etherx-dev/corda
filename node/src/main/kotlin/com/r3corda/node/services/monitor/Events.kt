@@ -4,6 +4,7 @@ import com.r3corda.core.contracts.*
 import com.r3corda.core.transactions.LedgerTransaction
 import com.r3corda.core.protocols.StateMachineRunId
 import com.r3corda.node.utilities.AddOrRemove
+import rx.Observable
 import java.time.Instant
 import java.util.*
 
@@ -11,8 +12,8 @@ import java.util.*
  * Events triggered by changes in the node, and sent to monitoring client(s).
  */
 sealed class ServiceToClientEvent(val time: Instant) {
-    class Transaction(time: Instant, val transaction: LedgerTransaction) : ServiceToClientEvent(time) {
-        override fun toString() = "Transaction(${transaction.commands})"
+    class Transaction(time: Instant, val transaction: SignedTransaction) : ServiceToClientEvent(time) {
+        override fun toString() = "Transaction(${transaction.tx.commands})"
     }
     class OutputState(
             time: Instant,
@@ -26,7 +27,7 @@ sealed class ServiceToClientEvent(val time: Instant) {
             val id: StateMachineRunId,
             val label: String,
             val addOrRemove: AddOrRemove
-    ) : ServiceToClientEvent(time) {
+            ) : ServiceToClientEvent(time) {
         override fun toString() = "StateMachine($label, ${addOrRemove.name})"
     }
     class Progress(time: Instant, val id: StateMachineRunId, val message: String) : ServiceToClientEvent(time) {

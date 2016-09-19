@@ -22,6 +22,7 @@ import org.apache.activemq.artemis.api.core.client.ClientProducer
 import org.apache.activemq.artemis.api.core.client.ClientSession
 import rx.Observable
 import rx.subjects.PublishSubject
+import rx.subjects.Subject
 import java.io.Closeable
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method

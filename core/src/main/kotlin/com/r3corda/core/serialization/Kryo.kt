@@ -17,6 +17,7 @@ import com.r3corda.core.transactions.SignedTransaction
 import com.r3corda.core.transactions.WireTransaction
 import com.r3corda.core.utilities.NonEmptySet
 import com.r3corda.core.utilities.NonEmptySetSerializer
+import com.r3corda.core.utilities.loggerFor
 import de.javakaffee.kryoserializers.ArraysAsListSerializer
 import de.javakaffee.kryoserializers.guava.*
 import net.i2p.crypto.eddsa.EdDSAPrivateKey
@@ -24,6 +25,7 @@ import net.i2p.crypto.eddsa.EdDSAPublicKey
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec
 import org.objenesis.strategy.StdInstantiatorStrategy
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
@@ -107,6 +109,23 @@ object SerializedBytesSerializer : Serializer<SerializedBytes<Any>>() {
 
     override fun read(kryo: Kryo, input: Input, type: Class<SerializedBytes<Any>>): SerializedBytes<Any> {
         return SerializedBytes(input.readBytes(input.readVarInt(true)))
+    }
+}
+
+object PairSerializer: Serializer<Pair<*, *>>() {
+    override fun write(kryo: Kryo, output: Output, obj: Pair<*, *>) {
+        kryo.writeClass(output, obj.first!!.javaClass)
+        kryo.writeClass(output, obj.second!!.javaClass)
+        kryo.writeObject(output, obj.first!!)
+        kryo.writeObject(output, obj.second!!)
+    }
+
+    override fun read(kryo: Kryo, input: Input, type: Class<Pair<*, *>>): Pair<*, *> {
+        val classFirst = kryo.readClass(input)
+        val classSecond = kryo.readClass(input)
+        val first = kryo.readObject(input, classFirst.type)
+        val second = kryo.readObject(input, classSecond.type)
+        return Pair(first, second)
     }
 }
 

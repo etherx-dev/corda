@@ -12,7 +12,7 @@ import com.r3corda.core.node.services.Vault
 import com.r3corda.core.protocols.ProtocolLogic
 import com.r3corda.core.protocols.StateMachineRunId
 import com.r3corda.core.serialization.serialize
-import com.r3corda.core.transactions.LedgerTransaction
+import com.r3corda.core.transactions.SignedTransaction
 import com.r3corda.core.transactions.TransactionBuilder
 import com.r3corda.core.utilities.loggerFor
 import com.r3corda.node.services.api.AbstractNodeService
@@ -60,7 +60,7 @@ class NodeMonitorService(services: ServiceHubInternal, val smm: StateMachineMana
         addMessageHandler(OUT_EVENT_TOPIC) { req: ClientToServiceCommandMessage -> processEventRequest(req) }
 
         // Notify listeners on state changes
-        services.storageService.validatedTransactions.updates.subscribe { tx -> notifyTransaction(tx.tx.toLedgerTransaction(services)) }
+        services.storageService.validatedTransactions.updates.subscribe { tx -> notifyTransaction(tx) }
         services.vaultService.updates.subscribe { update -> notifyVaultUpdate(update) }
         smm.changes.subscribe { change ->
             val id: StateMachineRunId = change.id
@@ -86,7 +86,7 @@ class NodeMonitorService(services: ServiceHubInternal, val smm: StateMachineMana
             = notifyEvent(ServiceToClientEvent.OutputState(Instant.now(), update.consumed, update.produced))
 
     @VisibleForTesting
-    internal fun notifyTransaction(transaction: LedgerTransaction)
+    internal fun notifyTransaction(transaction: SignedTransaction)
         = notifyEvent(ServiceToClientEvent.Transaction(Instant.now(), transaction))
 
     private fun processEventRequest(reqMessage: ClientToServiceCommandMessage) {

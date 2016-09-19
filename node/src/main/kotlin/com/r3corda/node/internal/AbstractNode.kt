@@ -6,6 +6,7 @@ import com.google.common.util.concurrent.MoreExecutors
 import com.google.common.util.concurrent.SettableFuture
 import com.r3corda.core.RunOnCallerThread
 import com.r3corda.core.crypto.Party
+import com.r3corda.core.crypto.generateKeyPair
 import com.r3corda.core.messaging.SingleMessageRecipient
 import com.r3corda.core.messaging.runOnNextMessage
 import com.r3corda.core.node.CityDatabase
@@ -52,6 +53,7 @@ import java.nio.file.Path
 import java.security.KeyPair
 import java.time.Clock
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
@@ -119,7 +121,9 @@ abstract class AbstractNode(val dir: Path, val configuration: NodeConfiguration,
 
     lateinit var storage: TxWritableStorageService
     lateinit var checkpointStorage: CheckpointStorage
-    lateinit var smm: StateMachineManager
+    // TODO think of init order, this won't do
+    val smmFuture = CompletableFuture<StateMachineManager>()
+    val smm: StateMachineManager get() = smmFuture.get()
     lateinit var vault: VaultService
     lateinit var keyManagement: KeyManagementService
     var inNodeNetworkMapService: NetworkMapService? = null
@@ -191,10 +195,10 @@ abstract class AbstractNode(val dir: Path, val configuration: NodeConfiguration,
                 tokenizableServices.add(uniquenessProvider!!)
             }
 
-            smm = StateMachineManager(services,
+            smmFuture.complete(StateMachineManager(services,
                     listOf(tokenizableServices),
                     checkpointStorage,
-                    serverThread)
+                    serverThread))
             if (serverThread is ExecutorService) {
                 runOnStop += Runnable {
                     // We wait here, even though any in-flight messages should have been drained away because the

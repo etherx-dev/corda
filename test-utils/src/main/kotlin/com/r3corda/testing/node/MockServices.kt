@@ -1,6 +1,7 @@
 package com.r3corda.testing.node
 
 import com.google.common.util.concurrent.ListenableFuture
+import com.r3corda.core.ThreadBox
 import com.r3corda.core.contracts.Attachment
 import com.r3corda.core.crypto.Party
 import com.r3corda.core.crypto.SecureHash
@@ -132,19 +133,31 @@ open class MockTransactionStorage : TransactionStorage {
 
     private val txns = HashMap<SecureHash, SignedTransaction>()
 
-    private val _updatesPublisher = PublishSubject.create<SignedTransaction>()
+    private val mutex = ThreadBox(object {
+        val txns = HashMap<SecureHash, SignedTransaction>()
+        val updatesPublisher = PublishSubject.create<SignedTransaction>()
+
+        fun notify(transaction: SignedTransaction) = updatesPublisher.onNext(transaction)
+    })
 
     override val updates: Observable<SignedTransaction>
-        get() = _updatesPublisher
+        get() = mutex.content.updatesPublisher
 
-    private fun notify(transaction: SignedTransaction) = _updatesPublisher.onNext(transaction)
 
     override fun addTransaction(transaction: SignedTransaction) {
-        txns[transaction.id] = transaction
-        notify(transaction)
+        mutex.locked {
+            txns[transaction.id] = transaction
+            notify(transaction)
+        }
     }
 
-    override fun getTransaction(id: SecureHash): SignedTransaction? = txns[id]
+    override fun getTransaction(id: SecureHash): SignedTransaction? = mutex.locked { txns[id] }
+
+    override fun currentAndFurtherTransactions(): Pair<List<SignedTransaction>, Observable<SignedTransaction>> {
+        return mutex.locked {
+            Pair(txns.values.toList(), updatesPublisher)
+        }
+    }
 }
 
 @ThreadSafe

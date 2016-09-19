@@ -19,6 +19,7 @@ import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
+import rx.subjects.UnicastSubject
 import java.security.PublicKey
 
 /**
