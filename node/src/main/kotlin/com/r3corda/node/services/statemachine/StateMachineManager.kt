@@ -145,7 +145,9 @@ class StateMachineManager(val serviceHub: ServiceHubInternal, tokenizableService
         serviceHub.networkMapCache.mapServiceRegistered.then(executor) {
             mutex.locked {
                 started = true
-                stateMachines.forEach { restartFiber(it.key, it.value) }
+                mutex.locked {
+                    stateMachines.forEach { restartFiber(it.key, it.value) }
+                }
             }
         }
     }
