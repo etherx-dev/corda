@@ -113,7 +113,7 @@ class GatheredTransactionDataModel {
             serviceToClient.foldToObservableList<ServiceToClientEvent, GatheredTransactionDataWritable, ObservableMap<SecureHash, SignedTransaction>>(
                     initialAccumulator = FXCollections.observableHashMap<SecureHash, SignedTransaction>(),
                     folderFun = { serviceToClientEvent, transactions, transactionStates ->
-                        when (serviceToClientEvent) {
+                        val _unit = when (serviceToClientEvent) {
                             is ServiceToClientEvent.Transaction -> {
                                 transactions.set(serviceToClientEvent.transaction.id, serviceToClientEvent.transaction)
                                 val somewhatResolvedTransaction = SomewhatResolvedSignedTransaction.fromSignedTransaction(
@@ -286,7 +286,7 @@ class GatheredTransactionDataModel {
                 if (localGathered == null) {
                     gathered = it
                 } else {
-                    mergeField(it, localGathered, GatheredTransactionDataWritable::fiberId)
+                    mergeField(it, localGathered, GatheredTransactionDataWritable::stateMachineRunId)
                     mergeField(it, localGathered, GatheredTransactionDataWritable::uuid)
                     mergeField(it, localGathered, GatheredTransactionDataWritable::stateMachineStatus)
                     mergeField(it, localGathered, GatheredTransactionDataWritable::protocolStatus)

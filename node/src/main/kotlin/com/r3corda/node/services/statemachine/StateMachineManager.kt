@@ -76,7 +76,7 @@ class StateMachineManager(val serviceHub: ServiceHubInternal, tokenizableService
         val changesPublisher = PublishSubject.create<Change>()
 
         fun notifyChangeObservers(psm: ProtocolStateMachineImpl<*>, addOrRemove: AddOrRemove) {
-            changesPublisher.onNext(Change(psm.logic, addOrRemove, psm.id))
+            changesPublisher.onNext(Change(psm.logic, addOrRemove, psm.stateMachineRunId))
         }
     })
 
