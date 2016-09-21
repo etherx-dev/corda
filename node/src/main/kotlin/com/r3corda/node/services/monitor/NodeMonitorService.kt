@@ -10,6 +10,7 @@ import com.r3corda.core.messaging.MessageRecipients
 import com.r3corda.core.node.services.DEFAULT_SESSION_ID
 import com.r3corda.core.node.services.Vault
 import com.r3corda.core.protocols.ProtocolLogic
+import com.r3corda.core.protocols.StateMachineRunId
 import com.r3corda.core.serialization.serialize
 import com.r3corda.core.transactions.LedgerTransaction
 import com.r3corda.core.transactions.TransactionBuilder
@@ -62,15 +63,15 @@ class NodeMonitorService(services: ServiceHubInternal, val smm: StateMachineMana
         services.storageService.validatedTransactions.updates.subscribe { tx -> notifyTransaction(tx.tx.toLedgerTransaction(services)) }
         services.vaultService.updates.subscribe { update -> notifyVaultUpdate(update) }
         smm.changes.subscribe { change ->
-            val fiberId: Long = change.third
-            val logic: ProtocolLogic<*> = change.first
+            val stateMachineRunId: StateMachineRunId = change.stateMachineRunId
+            val logic: ProtocolLogic<*> = change.logic
             val progressTracker = logic.progressTracker
 
-            notifyEvent(ServiceToClientEvent.StateMachine(Instant.now(), fiberId, logic.javaClass.name, change.second))
+            notifyEvent(ServiceToClientEvent.StateMachine(Instant.now(), stateMachineRunId, logic.javaClass.name, change.addOrRemove))
             if (progressTracker != null) {
-                when (change.second) {
+                when (change.addOrRemove) {
                     AddOrRemove.ADD -> progressTracker.changes.subscribe { progress ->
-                        notifyEvent(ServiceToClientEvent.Progress(Instant.now(), fiberId, progress.toString()))
+                        notifyEvent(ServiceToClientEvent.Progress(Instant.now(), stateMachineRunId, progress.toString()))
                     }
                     AddOrRemove.REMOVE -> {
                         // Nothing to do
@@ -167,7 +168,7 @@ class NodeMonitorService(services: ServiceHubInternal, val smm: StateMachineMana
             val tx = builder.toSignedTransaction(checkSufficientSignatures = false)
             val protocol = FinalityProtocol(tx, setOf(req), setOf(req.recipient))
             return TransactionBuildResult.ProtocolStarted(
-                    smm.add(BroadcastTransactionProtocol.TOPIC, protocol).machineId,
+                    smm.add(BroadcastTransactionProtocol.TOPIC, protocol).stateMachineRunId,
                     tx.tx.toLedgerTransaction(services),
                     "Cash payment transaction generated"
             )
@@ -201,7 +202,7 @@ class NodeMonitorService(services: ServiceHubInternal, val smm: StateMachineMana
             val tx = builder.toSignedTransaction(checkSufficientSignatures = false)
             val protocol = FinalityProtocol(tx, setOf(req), participants)
             return TransactionBuildResult.ProtocolStarted(
-                    smm.add(BroadcastTransactionProtocol.TOPIC, protocol).machineId,
+                    smm.add(BroadcastTransactionProtocol.TOPIC, protocol).stateMachineRunId,
                     tx.tx.toLedgerTransaction(services),
                     "Cash destruction transaction generated"
             )
@@ -220,7 +221,7 @@ class NodeMonitorService(services: ServiceHubInternal, val smm: StateMachineMana
         // Issuance transactions do not need to be notarised, so we can skip directly to broadcasting it
         val protocol = BroadcastTransactionProtocol(tx, setOf(req), setOf(req.recipient))
         return TransactionBuildResult.ProtocolStarted(
-                smm.add(BroadcastTransactionProtocol.TOPIC, protocol).machineId,
+                smm.add(BroadcastTransactionProtocol.TOPIC, protocol).stateMachineRunId,
                 tx.tx.toLedgerTransaction(services),
                 "Cash issuance completed"
         )
