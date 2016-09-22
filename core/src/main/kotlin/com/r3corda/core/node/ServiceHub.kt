@@ -8,6 +8,7 @@ import com.r3corda.core.contracts.TransactionState
 import com.r3corda.core.messaging.MessagingService
 import com.r3corda.core.node.services.*
 import com.r3corda.core.protocols.ProtocolLogic
+import com.r3corda.core.protocols.StateMachineRunId
 import java.time.Clock
 
 /**
@@ -32,17 +33,10 @@ interface ServiceHub {
      * Given a list of [SignedTransaction]s, writes them to the local storage for validated transactions and then
      * sends them to the vault for further processing.
      *
+     * @param stateMachineRunId The state machine requesting the record.
      * @param txs The transactions to record.
      */
-    fun recordTransactions(txs: Iterable<SignedTransaction>)
-
-    /**
-     * Given some [SignedTransaction]s, writes them to the local storage for validated transactions and then
-     * sends them to the vault for further processing.
-     *
-     * @param txs The transactions to record.
-     */
-    fun recordTransactions(vararg txs: SignedTransaction) = recordTransactions(txs.toList())
+    fun recordTransactions(stateMachineRunId: StateMachineRunId, txs: Iterable<SignedTransaction>)
 
     /**
      * Given a [StateRef] loads the referenced transaction and looks up the specified output [ContractState].
@@ -61,3 +55,16 @@ interface ServiceHub {
      */
     fun <T : Any> invokeProtocolAsync(logicType: Class<out ProtocolLogic<T>>, vararg args: Any?): ListenableFuture<T>
 }
+
+/**
+ * Convenience methods for tests that record transactions without using a state machine.
+ */
+fun ServiceHub.recordTransactionsAsFakeStateMachine(txs: Iterable<SignedTransaction>) = recordTransactions(StateMachineRunId.createRandom(), txs)
+fun ServiceHub.recordTransactionsAsFakeStateMachine(vararg txs: SignedTransaction) = recordTransactionsAsFakeStateMachine(txs.toList())
+
+/**
+ * Convenience methods for recording transactions in a protocol context.
+ */
+fun <T> ProtocolLogic<T>.recordTransactions(vararg txs: SignedTransaction) = serviceHub.recordTransactions(psm.id, txs.toList())
+fun <T> ProtocolLogic<T>.recordTransactions(txs: List<SignedTransaction>) = serviceHub.recordTransactions(psm.id, txs)
+

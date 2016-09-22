@@ -49,7 +49,7 @@ fun ServiceHub.fillWithSomeTestCash(howMuch: Amount<Currency>,
         return@map issuance.toSignedTransaction(true)
     }
 
-    recordTransactions(transactions)
+    recordTransactions(StateMachineRunId.createRandom(), transactions)
 
     // Get all the StateRefs of all the generated transactions.
     val states = transactions.flatMap { stx ->

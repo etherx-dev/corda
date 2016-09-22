@@ -4,6 +4,7 @@ import co.paralleluniverse.fibers.Suspendable
 import com.r3corda.core.checkedAdd
 import com.r3corda.core.crypto.Party
 import com.r3corda.core.crypto.SecureHash
+import com.r3corda.core.node.recordTransactions
 import com.r3corda.core.protocols.ProtocolLogic
 import com.r3corda.core.transactions.LedgerTransaction
 import com.r3corda.core.transactions.SignedTransaction
@@ -105,7 +106,7 @@ class ResolveTransactionsProtocol(private val txHashes: Set<SecureHash>,
             // Resolve to a LedgerTransaction and then run all contracts.
             val ltx = stx.toLedgerTransaction(serviceHub)
             ltx.verify()
-            serviceHub.recordTransactions(stx)
+            recordTransactions(stx)
             result += ltx
         }
 

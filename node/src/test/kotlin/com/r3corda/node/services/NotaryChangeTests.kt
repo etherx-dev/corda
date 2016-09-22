@@ -3,6 +3,7 @@ package com.r3corda.node.services
 import com.r3corda.core.contracts.*
 import com.r3corda.core.crypto.Party
 import com.r3corda.core.crypto.generateKeyPair
+import com.r3corda.core.node.recordTransactionsAsFakeStateMachine
 import com.r3corda.core.seconds
 import com.r3corda.core.utilities.DUMMY_NOTARY
 import com.r3corda.core.utilities.DUMMY_NOTARY_KEY
@@ -101,7 +102,7 @@ fun issueState(node: AbstractNode): StateAndRef<*> {
     tx.signWith(node.storage.myLegalIdentityKey)
     tx.signWith(DUMMY_NOTARY_KEY)
     val stx = tx.toSignedTransaction()
-    node.services.recordTransactions(listOf(stx))
+    node.services.recordTransactionsAsFakeStateMachine(listOf(stx))
     return StateAndRef(tx.outputStates().first(), StateRef(stx.id, 0))
 }
 
@@ -113,8 +114,8 @@ fun issueMultiPartyState(nodeA: AbstractNode, nodeB: AbstractNode): StateAndRef<
     tx.signWith(nodeB.storage.myLegalIdentityKey)
     tx.signWith(DUMMY_NOTARY_KEY)
     val stx = tx.toSignedTransaction()
-    nodeA.services.recordTransactions(listOf(stx))
-    nodeB.services.recordTransactions(listOf(stx))
+    nodeA.services.recordTransactionsAsFakeStateMachine(listOf(stx))
+    nodeB.services.recordTransactionsAsFakeStateMachine(listOf(stx))
     val stateAndRef = StateAndRef(state, StateRef(stx.id, 0))
     return stateAndRef
 }
@@ -124,6 +125,6 @@ fun issueInvalidState(node: AbstractNode, notary: Party = DUMMY_NOTARY): StateAn
     tx.setTime(Instant.now(), 30.seconds)
     tx.signWith(node.storage.myLegalIdentityKey)
     val stx = tx.toSignedTransaction(false)
-    node.services.recordTransactions(listOf(stx))
+    node.services.recordTransactionsAsFakeStateMachine(listOf(stx))
     return StateAndRef(tx.outputStates().first(), StateRef(stx.id, 0))
 }

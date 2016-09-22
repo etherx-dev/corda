@@ -3,6 +3,7 @@ package com.r3corda.protocols
 import co.paralleluniverse.fibers.Suspendable
 import com.r3corda.core.contracts.ClientToServiceCommand
 import com.r3corda.core.crypto.Party
+import com.r3corda.core.node.recordTransactions
 import com.r3corda.core.protocols.ProtocolLogic
 import com.r3corda.core.random63BitValue
 import com.r3corda.core.transactions.SignedTransaction
@@ -40,7 +41,7 @@ class BroadcastTransactionProtocol(val notarisedTransaction: SignedTransaction,
     @Suspendable
     override fun call() {
         // Record it locally
-        serviceHub.recordTransactions(notarisedTransaction)
+        recordTransactions(notarisedTransaction)
 
         // TODO: Messaging layer should handle this broadcast for us (although we need to not be sending
         // session ID, for that to work, as well).

@@ -1,6 +1,7 @@
 package com.r3corda.contracts
 
 import com.r3corda.core.contracts.*
+import com.r3corda.core.node.recordTransactionsAsFakeStateMachine
 import com.r3corda.core.seconds
 import com.r3corda.core.transactions.SignedTransaction
 import com.r3corda.core.utilities.DUMMY_NOTARY
@@ -300,7 +301,7 @@ class IRSTests {
         val services = MockServices()
         var previousTXN = generateIRSTxn(1)
         previousTXN.toLedgerTransaction(services).verify()
-        services.recordTransactions(previousTXN)
+        services.recordTransactionsAsFakeStateMachine(previousTXN)
         fun currentIRS() = previousTXN.tx.outputs.map { it.data }.filterIsInstance<InterestRateSwap.State>().single()
 
         while (true) {
@@ -318,7 +319,7 @@ class IRSTests {
                 tx.toSignedTransaction()
             }
             fixTX.toLedgerTransaction(services).verify()
-            services.recordTransactions(fixTX)
+            services.recordTransactionsAsFakeStateMachine(fixTX)
             previousTXN = fixTX
         }
     }

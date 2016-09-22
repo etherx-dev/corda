@@ -6,6 +6,7 @@ import com.r3corda.core.contracts.*
 import com.r3corda.core.crypto.SecureHash
 import com.r3corda.core.days
 import com.r3corda.core.node.ServiceHub
+import com.r3corda.core.node.recordTransactionsAsFakeStateMachine
 import com.r3corda.core.protocols.ProtocolLogic
 import com.r3corda.core.protocols.ProtocolLogicRef
 import com.r3corda.core.protocols.ProtocolLogicRefFactory
@@ -267,7 +268,7 @@ class NodeSchedulerServiceTest : SingletonSerializeAsToken() {
             }.toSignedTransaction()
             val txHash = usefulTX.id
 
-            services.recordTransactions(usefulTX)
+            services.recordTransactionsAsFakeStateMachine(usefulTX)
             scheduledRef = ScheduledStateRef(StateRef(txHash, 0), state.instant)
             scheduler.scheduleStateActivity(scheduledRef!!)
         }

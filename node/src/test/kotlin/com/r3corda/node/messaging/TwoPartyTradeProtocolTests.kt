@@ -9,7 +9,9 @@ import com.r3corda.core.crypto.SecureHash
 import com.r3corda.core.days
 import com.r3corda.core.messaging.SingleMessageRecipient
 import com.r3corda.core.node.ServiceHub
+import com.r3corda.core.node.recordTransactionsAsFakeStateMachine
 import com.r3corda.core.node.services.ServiceType
+import com.r3corda.core.node.services.StateMachineRecordedTransactionMappingStorage
 import com.r3corda.core.node.services.TransactionStorage
 import com.r3corda.core.node.services.Vault
 import com.r3corda.core.transactions.SignedTransaction
@@ -188,11 +190,14 @@ class TwoPartyTradeProtocolTests {
                                 advertisedServices: Set<ServiceType>, id: Int, keyPair: KeyPair?): MockNetwork.MockNode {
                 return object : MockNetwork.MockNode(dir, config, network, networkMapAddr, advertisedServices, id, keyPair) {
                     // That constructs the storage service object in a customised way ...
-                    override fun constructStorageService(attachments: NodeAttachmentService,
-                                                         transactionStorage: TransactionStorage,
-                                                         keypair: KeyPair,
-                                                         identity: Party): StorageServiceImpl {
-                        return StorageServiceImpl(attachments, RecordingTransactionStorage(transactionStorage), keypair, identity)
+                    override fun constructStorageService(
+                            attachments: NodeAttachmentService,
+                            transactionStorage: TransactionStorage,
+                            stateMachineRecordedTransactionMappingStorage: StateMachineRecordedTransactionMappingStorage,
+                            keypair: KeyPair,
+                            identity: Party
+                    ): StorageServiceImpl {
+                        return StorageServiceImpl(attachments, RecordingTransactionStorage(transactionStorage), stateMachineRecordedTransactionMappingStorage, keypair, identity)
                     }
                 }
             }
@@ -360,6 +365,7 @@ class TwoPartyTradeProtocolTests {
             services: ServiceHub,
             vararg extraKeys: KeyPair): Map<SecureHash, SignedTransaction> {
         val signed: List<SignedTransaction> = signAll(wtxToSign, extraKeys.toList() + DUMMY_CASH_ISSUER_KEY)
+        services.recordTransactionsAsFakeStateMachine(signed)
         val validatedTransactions = services.storageService.validatedTransactions
         if (validatedTransactions is RecordingTransactionStorage) {
             validatedTransactions.records.clear()

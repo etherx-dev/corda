@@ -5,6 +5,7 @@ import com.r3corda.core.transactions.SignedTransaction
 import com.r3corda.core.crypto.NullSignature
 import com.r3corda.core.crypto.Party
 import com.r3corda.core.crypto.SecureHash
+import com.r3corda.core.node.recordTransactionsAsFakeStateMachine
 import com.r3corda.core.serialization.opaque
 import com.r3corda.core.utilities.DUMMY_NOTARY_KEY
 import com.r3corda.testing.node.MockNetwork
@@ -85,7 +86,7 @@ class ResolveTransactionsProtocolTest {
             val stx = DummyContract.move(cursor.tx.outRef(0), MINI_CORP_PUBKEY)
                     .addSignatureUnchecked(NullSignature)
                     .toSignedTransaction(false)
-            a.services.recordTransactions(stx)
+            a.services.recordTransactionsAsFakeStateMachine(stx)
             cursor = stx
         }
         val p = ResolveTransactionsProtocol(setOf(cursor.id), a.info.identity)
@@ -113,7 +114,7 @@ class ResolveTransactionsProtocolTest {
             toSignedTransaction()
         }
 
-        a.services.recordTransactions(stx2, stx3)
+        a.services.recordTransactionsAsFakeStateMachine(stx2, stx3)
 
         val p = ResolveTransactionsProtocol(setOf(stx3.id), a.info.identity)
         val future = b.services.startProtocol("resolve", p)
@@ -147,7 +148,7 @@ class ResolveTransactionsProtocolTest {
             it.signWith(DUMMY_NOTARY_KEY)
             it.toSignedTransaction()
         }
-        a.services.recordTransactions(dummy1, dummy2)
+        a.services.recordTransactionsAsFakeStateMachine(dummy1, dummy2)
         return Pair(dummy1, dummy2)
     }
 }

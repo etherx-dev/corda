@@ -9,6 +9,7 @@ import com.r3corda.core.contracts.DOLLARS
 import com.r3corda.core.contracts.OwnableState
 import com.r3corda.core.contracts.`issued by`
 import com.r3corda.core.days
+import com.r3corda.core.node.recordTransactionsAsFakeStateMachine
 import com.r3corda.core.seconds
 import com.r3corda.core.transactions.SignedTransaction
 import com.r3corda.protocols.TwoPartyTradeProtocol
@@ -41,7 +42,7 @@ class TradeSimulation(runAsync: Boolean, latencyInjector: InMemoryMessagingNetwo
             tx.signWith(seller.storage.myLegalIdentityKey)
             tx.toSignedTransaction(true)
         }
-        seller.services.recordTransactions(issuance)
+        seller.services.recordTransactionsAsFakeStateMachine(issuance)
 
         val amount = 1000.DOLLARS
         val buyerProtocol = TwoPartyTradeProtocol.Buyer(

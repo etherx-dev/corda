@@ -36,4 +36,5 @@ class ServerRPCOps(
                 changes.map { StateMachineUpdate.fromStateMachineChange(it) }
         )
     }
+    override fun stateMachineRecordedTransactionMapping() = services.storageService.stateMachineRecordedTransactionMapping.track()
 }

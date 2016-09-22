@@ -6,6 +6,7 @@ import com.r3corda.core.contracts.*
 import com.r3corda.core.crypto.Party
 import com.r3corda.core.crypto.SecureHash
 import com.r3corda.core.days
+import com.r3corda.core.node.recordTransactionsAsFakeStateMachine
 import com.r3corda.core.seconds
 import com.r3corda.core.transactions.LedgerTransaction
 import com.r3corda.core.transactions.SignedTransaction
@@ -205,8 +206,8 @@ class CommercialPaperTestsGeneric {
         val bigCorpVault = bigCorpServices.fillWithSomeTestCash(13000.DOLLARS)
 
         // Propagate the cash transactions to each side.
-        aliceServices.recordTransactions(bigCorpVault.states.map { bigCorpServices.storageService.validatedTransactions.getTransaction(it.ref.txhash)!! })
-        bigCorpServices.recordTransactions(alicesVault.states.map { aliceServices.storageService.validatedTransactions.getTransaction(it.ref.txhash)!! })
+        aliceServices.recordTransactionsAsFakeStateMachine(bigCorpVault.states.map { bigCorpServices.storageService.validatedTransactions.getTransaction(it.ref.txhash)!! })
+        bigCorpServices.recordTransactionsAsFakeStateMachine(alicesVault.states.map { aliceServices.storageService.validatedTransactions.getTransaction(it.ref.txhash)!! })
 
         // BigCorp™ issues $10,000 of commercial paper, to mature in 30 days, owned initially by itself.
         val faceValue = 10000.DOLLARS `issued by` DUMMY_CASH_ISSUER
@@ -245,8 +246,8 @@ class CommercialPaperTestsGeneric {
         // Verify the txns are valid and insert into both sides.
         listOf(issueTX, moveTX).forEach {
             it.toLedgerTransaction(aliceServices).verify()
-            aliceServices.recordTransactions(it)
-            bigCorpServices.recordTransactions(it)
+            aliceServices.recordTransactionsAsFakeStateMachine(it)
+            bigCorpServices.recordTransactionsAsFakeStateMachine(it)
         }
 
         val e = assertFailsWith(TransactionVerificationException::class) {

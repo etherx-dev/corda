@@ -4,6 +4,7 @@ import com.r3corda.contracts.testing.fillWithSomeTestCash
 import com.r3corda.core.contracts.DOLLARS
 import com.r3corda.core.node.services.TxWritableStorageService
 import com.r3corda.core.node.services.VaultService
+import com.r3corda.core.protocols.StateMachineRunId
 import com.r3corda.core.transactions.SignedTransaction
 import com.r3corda.core.utilities.DUMMY_NOTARY
 import com.r3corda.core.utilities.LogHelper
@@ -40,7 +41,10 @@ class NodeVaultServiceTest {
             val services1 = object : MockServices() {
                 override val vaultService: VaultService = NodeVaultService(this)
 
-                override fun recordTransactions(txs: Iterable<SignedTransaction>) {
+                override fun recordTransactions(stateMachineRunId: StateMachineRunId, txs: Iterable<SignedTransaction>) {
+                    txs.forEach {
+                        storageService.stateMachineRecordedTransactionMapping.addMapping(stateMachineRunId, it.id)
+                    }
                     for (stx in txs) {
                         storageService.validatedTransactions.addTransaction(stx)
                         vaultService.notify(stx.tx)
@@ -59,7 +63,10 @@ class NodeVaultServiceTest {
                 // We need to be able to find the same transactions as before, too.
                 override val storageService: TxWritableStorageService get() = originalStorage
 
-                override fun recordTransactions(txs: Iterable<SignedTransaction>) {
+                override fun recordTransactions(stateMachineRunId: StateMachineRunId, txs: Iterable<SignedTransaction>) {
+                    txs.forEach {
+                        storageService.stateMachineRecordedTransactionMapping.addMapping(stateMachineRunId, it.id)
+                    }
                     for (stx in txs) {
                         storageService.validatedTransactions.addTransaction(stx)
                         vaultService.notify(stx.tx)

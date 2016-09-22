@@ -5,7 +5,9 @@ import com.r3corda.contracts.asset.DUMMY_CASH_ISSUER
 import com.r3corda.contracts.asset.cashBalances
 import com.r3corda.contracts.testing.fillWithSomeTestCash
 import com.r3corda.core.contracts.*
+import com.r3corda.core.node.recordTransactionsAsFakeStateMachine
 import com.r3corda.core.node.services.VaultService
+import com.r3corda.core.protocols.StateMachineRunId
 import com.r3corda.core.transactions.SignedTransaction
 import com.r3corda.core.utilities.DUMMY_NOTARY
 import com.r3corda.core.utilities.DUMMY_NOTARY_KEY
@@ -40,7 +42,10 @@ class VaultWithCashTest {
             services = object : MockServices() {
                 override val vaultService: VaultService = NodeVaultService(this)
 
-                override fun recordTransactions(txs: Iterable<SignedTransaction>) {
+                override fun recordTransactions(stateMachineRunId: StateMachineRunId, txs: Iterable<SignedTransaction>) {
+                    txs.forEach {
+                        storageService.stateMachineRecordedTransactionMapping.addMapping(stateMachineRunId, it.id)
+                    }
                     for (stx in txs) {
                         storageService.validatedTransactions.addTransaction(stx)
                     }
@@ -101,11 +106,12 @@ class VaultWithCashTest {
             }.toSignedTransaction()
 
             assertNull(vault.currentVault.cashBalances[USD])
-            services.recordTransactions(usefulTX)
+
+            services.recordTransactionsAsFakeStateMachine(usefulTX)
             assertEquals(100.DOLLARS, vault.currentVault.cashBalances[USD])
-            services.recordTransactions(irrelevantTX)
+            services.recordTransactionsAsFakeStateMachine(irrelevantTX)
             assertEquals(100.DOLLARS, vault.currentVault.cashBalances[USD])
-            services.recordTransactions(spendTX)
+            services.recordTransactionsAsFakeStateMachine(spendTX)
 
             assertEquals(20.DOLLARS, vault.currentVault.cashBalances[USD])
 
@@ -150,7 +156,7 @@ class VaultWithCashTest {
 
             dummyIssue.toLedgerTransaction(services).verify()
 
-            services.recordTransactions(dummyIssue)
+            services.recordTransactionsAsFakeStateMachine(dummyIssue)
             assertEquals(1, vault.currentVault.states.toList().size)
 
             // Move the same state
@@ -162,7 +168,7 @@ class VaultWithCashTest {
 
             dummyIssue.toLedgerTransaction(services).verify()
 
-            services.recordTransactions(dummyMove)
+            services.recordTransactionsAsFakeStateMachine(dummyMove)
             assertEquals(1, vault.currentVault.states.toList().size)
         }
     }

@@ -41,11 +41,14 @@ abstract class ServiceHubInternal : ServiceHub {
     /**
      * Given a list of [SignedTransaction]s, writes them to the given storage for validated transactions and then
      * sends them to the vault for further processing. This is intended for implementations to call from
-     * [recordTransactions].
+     * [recordTransactionsAsFakeStateMachine].
      *
      * @param txs The transactions to record.
      */
-    internal fun recordTransactionsInternal(writableStorageService: TxWritableStorageService, txs: Iterable<SignedTransaction>) {
+    internal fun recordTransactionsInternal(stateMachineRunId: StateMachineRunId, writableStorageService: TxWritableStorageService, txs: Iterable<SignedTransaction>) {
+        txs.forEach {
+            storageService.stateMachineRecordedTransactionMapping.addMapping(stateMachineRunId, it.id)
+        }
         txs.forEach { writableStorageService.validatedTransactions.addTransaction(it) }
         vaultService.notifyAll(txs.map { it.tx })
     }

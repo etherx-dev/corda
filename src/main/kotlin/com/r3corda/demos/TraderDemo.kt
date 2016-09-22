@@ -13,6 +13,7 @@ import com.r3corda.core.crypto.Party
 import com.r3corda.core.crypto.SecureHash
 import com.r3corda.core.crypto.generateKeyPair
 import com.r3corda.core.node.NodeInfo
+import com.r3corda.core.node.recordTransactions
 import com.r3corda.core.node.services.ServiceType
 import com.r3corda.core.protocols.ProtocolLogic
 import com.r3corda.core.transactions.SignedTransaction
@@ -250,7 +251,7 @@ private class TraderDemoProtocolBuyer(val otherSide: Party,
         // This invokes the trading protocol and out pops our finished transaction.
         val tradeTX: SignedTransaction = subProtocol(buyer, inheritParentSessions = true)
         // TODO: This should be moved into the protocol itself.
-        serviceHub.recordTransactions(listOf(tradeTX))
+        recordTransactions(listOf(tradeTX))
 
         println("Purchase complete - we are a happy customer! Final transaction is: " +
                 "\n\n${Emoji.renderIfSupported(tradeTX.tx)}")
@@ -327,7 +328,7 @@ private class TraderDemoProtocolSeller(val otherSide: Party,
                 cpOwnerKey,
                 progressTracker.getChildProgressTracker(TRADING)!!)
         val tradeTX: SignedTransaction = subProtocol(seller, inheritParentSessions = true)
-        serviceHub.recordTransactions(listOf(tradeTX))
+        recordTransactions(listOf(tradeTX))
 
         return tradeTX
     }
@@ -359,7 +360,7 @@ private class TraderDemoProtocolSeller(val otherSide: Party,
 
             // Commit it to local storage.
             val stx = tx.toSignedTransaction(true)
-            serviceHub.recordTransactions(listOf(stx))
+            recordTransactions(listOf(stx))
 
             stx
         }
@@ -372,7 +373,7 @@ private class TraderDemoProtocolSeller(val otherSide: Party,
             val notarySignature = subProtocol(NotaryProtocol.Client(builder.toSignedTransaction(false)))
             builder.addSignatureUnchecked(notarySignature)
             val tx = builder.toSignedTransaction(true)
-            serviceHub.recordTransactions(listOf(tx))
+            recordTransactions(listOf(tx))
             tx
         }
 

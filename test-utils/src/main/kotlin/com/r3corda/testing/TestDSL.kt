@@ -3,6 +3,7 @@ package com.r3corda.testing
 import com.r3corda.core.contracts.*
 import com.r3corda.core.crypto.*
 import com.r3corda.core.node.ServiceHub
+import com.r3corda.core.node.recordTransactionsAsFakeStateMachine
 import com.r3corda.core.serialization.serialize
 import com.r3corda.core.transactions.SignedTransaction
 import com.r3corda.core.transactions.TransactionBuilder
@@ -278,10 +279,10 @@ data class TestLedgerDSLInterpreter private constructor (
 
     override fun verifies(): EnforceVerifyOrFail {
         try {
-            services.recordTransactions(transactionsUnverified.map { SignedTransaction(it.serialized, listOf(NullSignature)) })
+            services.recordTransactionsAsFakeStateMachine(transactionsUnverified.map { SignedTransaction(it.serialized, listOf(NullSignature)) })
             for ((key, value) in transactionWithLocations) {
                 value.transaction.toLedgerTransaction(services).verify()
-                services.recordTransactions(SignedTransaction(value.transaction.serialized, listOf(NullSignature)))
+                services.recordTransactionsAsFakeStateMachine(SignedTransaction(value.transaction.serialized, listOf(NullSignature)))
             }
             return EnforceVerifyOrFail.Token
         } catch (exception: TransactionVerificationException) {
