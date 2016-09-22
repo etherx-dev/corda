@@ -1,8 +1,8 @@
 package com.r3corda.core.testing
 
 import com.r3corda.core.ThreadBox
+import com.r3corda.core.bufferUntilSubscribed
 import com.r3corda.core.contracts.*
-import com.r3corda.core.crypto.SecureHash
 import com.r3corda.core.node.ServiceHub
 import com.r3corda.core.node.services.Vault
 import com.r3corda.core.node.services.VaultService
@@ -12,6 +12,7 @@ import com.r3corda.core.utilities.loggerFor
 import com.r3corda.core.utilities.trace
 import rx.Observable
 import rx.subjects.PublishSubject
+import rx.subjects.UnicastSubject
 import java.security.PublicKey
 import java.util.*
 import javax.annotation.concurrent.ThreadSafe
@@ -30,16 +31,21 @@ open class InMemoryVaultService(protected val services: ServiceHub) : SingletonS
     // to vault somewhere.
     protected class InnerState {
         var vault = Vault(emptyList<StateAndRef<ContractState>>())
+        val _updatesPublisher = PublishSubject.create<Vault.Update>()
     }
 
     protected val mutex = ThreadBox(InnerState())
 
     override val currentVault: Vault get() = mutex.locked { vault }
 
-    private val _updatesPublisher = PublishSubject.create<Vault.Update>()
-
     override val updates: Observable<Vault.Update>
-        get() = _updatesPublisher
+        get() = mutex.content._updatesPublisher
+
+    override fun track(): Pair<Vault, Observable<Vault.Update>> {
+        return mutex.locked {
+            Pair(vault, updates.bufferUntilSubscribed())
+        }
+    }
 
     /**
      * Returns a snapshot of the heads of LinearStates.
@@ -82,7 +88,9 @@ open class InMemoryVaultService(protected val services: ServiceHub) : SingletonS
         }
 
         if (netDelta != Vault.NoUpdate) {
-            _updatesPublisher.onNext(netDelta)
+            mutex.locked {
+                _updatesPublisher.onNext(netDelta)
+            }
         }
         return changedVault
     }

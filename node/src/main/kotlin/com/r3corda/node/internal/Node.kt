@@ -12,6 +12,7 @@ import com.r3corda.node.services.config.FullNodeConfiguration
 import com.r3corda.node.services.config.NodeConfiguration
 import com.r3corda.node.services.messaging.NodeMessagingClient
 import com.r3corda.node.services.messaging.ArtemisMessagingServer
+import com.r3corda.node.services.messaging.CordaRPCOps
 import com.r3corda.node.services.transactions.PersistentUniquenessProvider
 import com.r3corda.node.servlets.AttachmentDownloadServlet
 import com.r3corda.node.servlets.Config
@@ -38,7 +39,6 @@ import java.time.Clock
 import java.util.*
 import javax.management.ObjectName
 import javax.servlet.*
-import javax.servlet.http.HttpServletResponse
 import kotlin.concurrent.thread
 
 class ConfigurationException(message: String) : Exception(message)
@@ -123,15 +123,14 @@ class Node(dir: Path, val p2pAddr: HostAndPort, val webServerAddr: HostAndPort,
             messageBroker = ArtemisMessagingServer(dir, configuration, p2pAddr, services.networkMapCache)
             p2pAddr
         }()
-        val ops = ServerRPCOps(services)
         if (networkMapService != null) {
-            return NodeMessagingClient(dir, configuration, serverAddr, services.storageService.myLegalIdentityKey.public, serverThread, rpcOps = ops)
+            return NodeMessagingClient(dir, configuration, serverAddr, services.storageService.myLegalIdentityKey.public, serverThread)
         } else {
-            return NodeMessagingClient(dir, configuration, serverAddr, null, serverThread, rpcOps = ops)
+            return NodeMessagingClient(dir, configuration, serverAddr, null, serverThread)
         }
     }
 
-    override fun startMessagingService() {
+    override fun startMessagingService(cordaRPCOps: CordaRPCOps?) {
         // Start up the embedded MQ server
         messageBroker?.apply {
             configureWithDevSSLCertificate() // TODO: Create proper certificate provisioning process
@@ -141,10 +140,9 @@ class Node(dir: Path, val p2pAddr: HostAndPort, val webServerAddr: HostAndPort,
         }
 
         // Start up the MQ client.
-        (net as NodeMessagingClient).apply {
-            configureWithDevSSLCertificate() // TODO: Client might need a separate certificate
-            start()
-        }
+        val net = net as NodeMessagingClient
+        net.configureWithDevSSLCertificate() // TODO: Client might need a separate certificate
+        net.start(cordaRPCOps)
     }
 
     private fun initWebServer(): Server {

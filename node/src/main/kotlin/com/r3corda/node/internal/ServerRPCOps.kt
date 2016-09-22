@@ -1,14 +1,39 @@
 package com.r3corda.node.internal
 
+import com.r3corda.core.contracts.ContractState
+import com.r3corda.core.contracts.StateAndRef
+import com.r3corda.core.node.services.Vault
 import com.r3corda.node.services.api.ServiceHubInternal
 import com.r3corda.node.services.messaging.CordaRPCOps
+import com.r3corda.node.services.messaging.StateMachineInfo
+import com.r3corda.node.services.messaging.StateMachineUpdate
+import com.r3corda.node.services.statemachine.StateMachineManager
+import com.r3corda.node.utilities.AddOrRemove
+import com.r3corda.node.utilities.databaseTransaction
+import rx.Observable
 
 /**
  * Server side implementations of RPCs available to MQ based client tools. Execution takes place on the server
  * thread (i.e. serially). Arguments are serialised and deserialised automatically.
  */
-class ServerRPCOps(services: ServiceHubInternal) : CordaRPCOps {
+class ServerRPCOps(
+        val services: ServiceHubInternal,
+        val stateMachineManager: StateMachineManager
+) : CordaRPCOps {
     override val protocolVersion: Int = 0
 
-    // TODO: Add useful RPCs for client apps (examining the vault, etc)
+    override fun vaultAndUpdates(): Pair<List<StateAndRef<ContractState>>, Observable<Vault.Update>> {
+        return databaseTransaction {
+            val (vault, updates) = services.vaultService.track()
+            Pair(vault.states.toList(), updates)
+        }
+    }
+    override fun verifiedTransactions() = services.storageService.validatedTransactions.track()
+    override fun stateMachinesAndUpdates(): Pair<List<StateMachineInfo>, Observable<StateMachineUpdate>> {
+        val (allStateMachines, changes) = stateMachineManager.track()
+        return Pair(
+                allStateMachines.map { StateMachineInfo.fromProtocolStateMachineImpl(it) },
+                changes.map { StateMachineUpdate.fromStateMachineChange(it) }
+        )
+    }
 }

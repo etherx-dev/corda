@@ -65,6 +65,7 @@ interface DriverDSLExposedInterface {
      * @param serverAddress the artemis server to connect to, for example a [Node].
      */
     fun startClient(providedName: String, serverAddress: HostAndPort): Future<NodeMessagingClient>
+
     /**
      * Starts a local [ArtemisMessagingServer] of which there may only be one.
      */
@@ -346,7 +347,7 @@ class DriverDSL(
 
         return Executors.newSingleThreadExecutor().submit(Callable<NodeMessagingClient> {
             client.configureWithDevSSLCertificate()
-            client.start()
+            client.start(null)
             thread { client.run() }
             state.locked {
                 clients.add(client)

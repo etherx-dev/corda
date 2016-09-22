@@ -360,7 +360,6 @@ class TwoPartyTradeProtocolTests {
             services: ServiceHub,
             vararg extraKeys: KeyPair): Map<SecureHash, SignedTransaction> {
         val signed: List<SignedTransaction> = signAll(wtxToSign, extraKeys.toList() + DUMMY_CASH_ISSUER_KEY)
-        services.recordTransactions(signed)
         val validatedTransactions = services.storageService.validatedTransactions
         if (validatedTransactions is RecordingTransactionStorage) {
             validatedTransactions.records.clear()
@@ -437,6 +436,9 @@ class TwoPartyTradeProtocolTests {
     }
 
     class RecordingTransactionStorage(val delegate: TransactionStorage) : TransactionStorage {
+        override fun track(): Pair<List<SignedTransaction>, Observable<SignedTransaction>> {
+            return delegate.track()
+        }
 
         val records: MutableList<TxRecord> = Collections.synchronizedList(ArrayList<TxRecord>())
         override val updates: Observable<SignedTransaction>

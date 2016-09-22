@@ -51,8 +51,7 @@ class NodeMessagingClient(directory: Path,
                           val serverHostPort: HostAndPort,
                           val myIdentity: PublicKey?,
                           val executor: AffinityExecutor,
-                          val persistentInbox: Boolean = true,
-                          private val rpcOps: CordaRPCOps? = null)
+                          val persistentInbox: Boolean = true)
 : ArtemisMessagingComponent(directory / "certificates", config), MessagingServiceInternal {
     companion object {
         val log = loggerFor<NodeMessagingClient>()
@@ -106,7 +105,7 @@ class NodeMessagingClient(directory: Path,
         require(directory.fileSystem == FileSystems.getDefault()) { "Artemis only uses the default file system" }
     }
 
-    fun start() {
+    fun start(rpcOps: CordaRPCOps? = null) {
         state.locked {
             check(!started) { "start can't be called twice" }
             started = true
@@ -142,6 +141,7 @@ class NodeMessagingClient(directory: Path,
                 session.createTemporaryQueue("activemq.notifications", "rpc.qremovals", "_AMQ_NotifType = 1")
                 rpcConsumer = session.createConsumer(RPC_REQUESTS_QUEUE)
                 rpcNotificationConsumer = session.createConsumer("rpc.qremovals")
+                dispatcher = createRPCDispatcher(state, rpcOps)
             }
         }
     }
@@ -378,7 +378,9 @@ class NodeMessagingClient(directory: Path,
 
     override fun createMessage(topic: String, sessionID: Long, data: ByteArray) = createMessage(TopicSession(topic, sessionID), data)
 
-    private fun createRPCDispatcher(ops: CordaRPCOps) = object : RPCDispatcher(ops) {
+    var dispatcher: RPCDispatcher? = null
+
+    private fun createRPCDispatcher(state: ThreadBox<InnerState>, ops: CordaRPCOps) = object : RPCDispatcher(ops) {
         override fun send(bits: SerializedBytes<*>, toAddress: String) {
             state.locked {
                 val msg = session!!.createMessage(false)
@@ -387,6 +389,4 @@ class NodeMessagingClient(directory: Path,
             }
         }
     }
-
-    private val dispatcher = if (rpcOps != null) createRPCDispatcher(rpcOps) else null
 }

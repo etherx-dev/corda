@@ -10,6 +10,7 @@ import com.r3corda.core.utilities.debug
 import com.r3corda.protocols.HandshakeMessage
 import org.slf4j.Logger
 import java.util.*
+import rx.Observable
 
 /**
  * A sub-class of [ProtocolLogic<T>] implements a protocol flow using direct, straight line blocking code. Thus you
@@ -158,4 +159,10 @@ abstract class ProtocolLogic<out T> {
 
     private data class Session(val sendSessionId: Long, val receiveSessionId: Long)
 
+    // TODO this is not threadsafe, needs an atomic get-step-and-subscribe
+    fun track(): Pair<String, Observable<String>>? {
+        return progressTracker?.let {
+            Pair(it.currentStep.toString(), it.changes.map { it.toString() })
+        }
+    }
 }
