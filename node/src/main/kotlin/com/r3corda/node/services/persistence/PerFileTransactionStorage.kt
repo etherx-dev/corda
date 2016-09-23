@@ -28,7 +28,7 @@ class PerFileTransactionStorage(val storeDir: Path) : TransactionStorage {
     }
 
     private val mutex = ThreadBox(object {
-        val transactions = HashMap<SecureHash, SignedTransaction>()
+        val transactionsMap = HashMap<SecureHash, SignedTransaction>()
         val updatesPublisher = PublishSubject.create<SignedTransaction>()
 
         fun notify(transaction: SignedTransaction) = updatesPublisher.onNext(transaction)
@@ -44,7 +44,7 @@ class PerFileTransactionStorage(val storeDir: Path) : TransactionStorage {
             Files.list(storeDir)
                     .filter { it.toString().toLowerCase().endsWith(fileExtension) }
                     .map { Files.readAllBytes(it).deserialize<SignedTransaction>() }
-                    .forEach { transactions[it.id] = it }
+                    .forEach { transactionsMap[it.id] = it }
         }
     }
 
@@ -52,19 +52,19 @@ class PerFileTransactionStorage(val storeDir: Path) : TransactionStorage {
         val transactionFile = storeDir.resolve("${transaction.id.toString().toLowerCase()}$fileExtension")
         transaction.serialize().writeToFile(transactionFile)
         mutex.locked {
-            transactions[transaction.id] = transaction
+            transactionsMap[transaction.id] = transaction
             notify(transaction)
         }
         logger.trace { "Stored $transaction to $transactionFile" }
     }
 
-    override fun getTransaction(id: SecureHash): SignedTransaction? = mutex.locked { transactions[id] }
+    override fun getTransaction(id: SecureHash): SignedTransaction? = mutex.locked { transactionsMap[id] }
 
-    val transactions: Iterable<SignedTransaction> get() = mutex.locked { transactions.values.toList() }
+    val transactions: Iterable<SignedTransaction> get() = mutex.locked { transactionsMap.values.toList() }
 
     override fun track(): Pair<List<SignedTransaction>, Observable<SignedTransaction>> {
         return mutex.locked {
-            Pair(transactions.values.toList(), updates.bufferUntilSubscribed())
+            Pair(transactionsMap.values.toList(), updates.bufferUntilSubscribed())
         }
     }
 
