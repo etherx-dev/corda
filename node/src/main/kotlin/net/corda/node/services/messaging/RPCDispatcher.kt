@@ -159,11 +159,10 @@ abstract class RPCDispatcher(val ops: RPCOps, val userService: RPCUserService) {
     }
 
     private fun ClientMessage.getAuthenticatedAddress(user: User, property: String, required: Boolean): String? {
-        val address: String? = if (required) requiredString(property) else getStringProperty(property)
-        val expectedAddressPrefix = "${ArtemisMessagingComponent.CLIENTS_PREFIX}${user.username}."
-        if (address != null && !address.startsWith(expectedAddressPrefix)) {
-            throw RPCException("$property address does not match up with the user")
+        return if (containsProperty(property)) {
+            "${ArtemisMessagingComponent.CLIENTS_PREFIX}${user.username}.rpc.${getLongProperty(property)}"
+        } else {
+            if (required) throw RPCException("missing $property property") else null
         }
-        return address
     }
 }
