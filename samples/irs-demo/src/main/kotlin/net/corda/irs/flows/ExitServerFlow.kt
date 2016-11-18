@@ -4,9 +4,9 @@ import co.paralleluniverse.fibers.Suspendable
 import co.paralleluniverse.strands.Strand
 import net.corda.core.crypto.Party
 import net.corda.core.flows.FlowLogic
-import net.corda.core.node.CordaPluginRegistry
 import net.corda.core.node.NodeInfo
 import net.corda.core.node.PluginServiceHub
+import net.corda.core.node.CordaPluginRegistry
 import net.corda.testing.node.MockNetworkMapCache
 import java.util.concurrent.TimeUnit
 
@@ -20,7 +20,7 @@ object ExitServerFlow {
     data class ExitMessage(val exitCode: Int)
 
     class Plugin: CordaPluginRegistry() {
-        override val servicePlugins: List<Class<*>> = listOf(Service::class.java)
+        override val servicePlugins = listOf(::Service)
     }
 
     class Service(services: PluginServiceHub) {

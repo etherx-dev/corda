@@ -47,8 +47,6 @@ dependencies {
     // Corda integration dependencies
     compile "net.corda:corda:$corda_version"   // TODO
     compile project(':core')
-    compile project(':client')
-    compile project(':node')
     compile project(':test-utils')
 
     // Javax is required for webapis

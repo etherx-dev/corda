@@ -8,7 +8,6 @@ import net.corda.core.flows.FlowLogic
 import net.corda.core.math.CubicSplineInterpolator
 import net.corda.core.math.Interpolator
 import net.corda.core.math.InterpolatorFactory
-import net.corda.core.node.CordaPluginRegistry
 import net.corda.core.node.PluginServiceHub
 import net.corda.core.node.services.ServiceType
 import net.corda.core.serialization.SingletonSerializeAsToken
@@ -16,6 +15,7 @@ import net.corda.core.transactions.FilteredTransaction
 import net.corda.core.utilities.ProgressTracker
 import net.corda.irs.flows.FixingFlow
 import net.corda.irs.flows.RatesFixFlow
+import net.corda.core.node.CordaPluginRegistry
 import net.corda.node.services.api.AcceptsFileUpload
 import net.corda.node.utilities.AbstractJDBCHashSet
 import net.corda.node.utilities.FiberBox
@@ -49,8 +49,8 @@ object NodeInterestRates {
      * Register the flow that is used with the Fixing integration tests.
      */
     class Plugin : CordaPluginRegistry() {
-        override val requiredFlows: Map<String, Set<String>> = mapOf(Pair(FixingFlow.FixingRoleDecider::class.java.name, setOf(Duration::class.java.name, StateRef::class.java.name)))
-        override val servicePlugins: List<Class<*>> = listOf(Service::class.java)
+        override val requiredFlows = mapOf(Pair(FixingFlow.FixingRoleDecider::class.java.name, setOf(Duration::class.java.name, StateRef::class.java.name)))
+        override val servicePlugins = listOf(::Service)
     }
 
     /**

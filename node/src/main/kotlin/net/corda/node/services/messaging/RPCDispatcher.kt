@@ -8,6 +8,8 @@ import com.esotericsoftware.kryo.io.Output
 import com.google.common.annotations.VisibleForTesting
 import com.google.common.collect.HashMultimap
 import net.corda.core.ErrorOr
+import net.corda.core.messaging.RPCOps
+import net.corda.core.messaging.RPCReturnsObservables
 import net.corda.core.serialization.SerializedBytes
 import net.corda.core.serialization.deserialize
 import net.corda.core.serialization.serialize

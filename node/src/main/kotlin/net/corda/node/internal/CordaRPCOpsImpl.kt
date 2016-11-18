@@ -2,23 +2,30 @@ package net.corda.node.internal
 
 import net.corda.core.contracts.ContractState
 import net.corda.core.contracts.StateAndRef
+import net.corda.core.crypto.CompositeKey
 import net.corda.core.crypto.SecureHash
 import net.corda.core.flows.FlowLogic
+import net.corda.core.messaging.CordaRPCOps
+import net.corda.core.messaging.FlowHandle
+import net.corda.core.messaging.StateMachineInfo
+import net.corda.core.messaging.StateMachineUpdate
 import net.corda.core.node.NodeInfo
 import net.corda.core.node.ServiceHub
 import net.corda.core.node.services.NetworkMapCache
 import net.corda.core.node.services.StateMachineTransactionMapping
 import net.corda.core.node.services.Vault
+import net.corda.node.services.messaging.requirePermission
 import net.corda.core.toObservable
 import net.corda.core.transactions.SignedTransaction
-import net.corda.core.utilities.ProgressTracker
-import net.corda.node.services.messaging.*
 import net.corda.node.services.startFlowPermission
 import net.corda.node.services.statemachine.FlowStateMachineImpl
 import net.corda.node.services.statemachine.StateMachineManager
+import net.corda.node.utilities.AddOrRemove
 import net.corda.node.utilities.databaseTransaction
 import org.jetbrains.exposed.sql.Database
 import rx.Observable
+import java.io.InputStream
+import java.time.LocalDateTime
 
 /**
  * Server side implementations of RPCs available to MQ based client tools. Execution takes place on the server
@@ -50,8 +57,8 @@ class CordaRPCOpsImpl(
     override fun stateMachinesAndUpdates(): Pair<List<StateMachineInfo>, Observable<StateMachineUpdate>> {
         val (allStateMachines, changes) = smm.track()
         return Pair(
-                allStateMachines.map { StateMachineInfo.fromFlowStateMachineImpl(it) },
-                changes.map { StateMachineUpdate.fromStateMachineChange(it) }
+                allStateMachines.map { stateMachineInfoFromFlowStateMachineImpl(it) },
+                changes.map { stateMachineUpdateFromStateMachineChange(it) }
         )
     }
 
@@ -83,8 +90,41 @@ class CordaRPCOpsImpl(
         val stateMachine = services.invokeFlowAsync(logicType, *args) as FlowStateMachineImpl<T>
         return FlowHandle(
                 id = stateMachine.id,
-                progress = stateMachine.logic.progressTracker?.changes ?: Observable.empty<ProgressTracker.Change>(),
+                progress = stateMachine.logic.track()?.second ?: Observable.empty(),
                 returnValue = stateMachine.resultFuture.toObservable()
         )
+    }
+
+    override fun attachmentExists(id: SecureHash) = services.storageService.attachments.openAttachment(id) != null
+    override fun uploadAttachment(jar: InputStream) = services.storageService.attachments.importAttachment(jar)
+    override fun nodeTimeInUTC(): LocalDateTime = LocalDateTime.now(services.clock)
+
+    override fun partyFromKey(key: CompositeKey) = services.identityService.partyFromKey(key)
+    override fun partyFromName(name: String) = services.identityService.partyFromName(name)
+
+    companion object {
+        fun stateMachineInfoFromFlowStateMachineImpl(stateMachine: FlowStateMachineImpl<*>): StateMachineInfo {
+            return StateMachineInfo(
+                    id = stateMachine.id,
+                    flowLogicClassName = stateMachine.logic.javaClass.simpleName,
+                    progressTrackerStepAndUpdates = stateMachine.logic.track()
+            )
+        }
+
+        fun stateMachineUpdateFromStateMachineChange(change: StateMachineManager.Change): StateMachineUpdate {
+            return when (change.addOrRemove) {
+                AddOrRemove.ADD -> {
+                    val stateMachineInfo = StateMachineInfo(
+                            id = change.id,
+                            flowLogicClassName = change.logic.javaClass.simpleName,
+                            progressTrackerStepAndUpdates = change.logic.track()
+                    )
+                    StateMachineUpdate.Added(stateMachineInfo)
+                }
+                AddOrRemove.REMOVE -> {
+                    StateMachineUpdate.Removed(change.id)
+                }
+            }
+        }
     }
 }

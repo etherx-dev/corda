@@ -4,7 +4,6 @@ import co.paralleluniverse.fibers.Suspendable
 import net.corda.core.contracts.DealState
 import net.corda.core.crypto.Party
 import net.corda.core.flows.FlowLogic
-import net.corda.core.node.CordaPluginRegistry
 import net.corda.core.node.PluginServiceHub
 import net.corda.core.serialization.SingletonSerializeAsToken
 import net.corda.core.transactions.SignedTransaction
@@ -13,6 +12,7 @@ import net.corda.flows.TwoPartyDealFlow
 import net.corda.flows.TwoPartyDealFlow.Acceptor
 import net.corda.flows.TwoPartyDealFlow.AutoOffer
 import net.corda.flows.TwoPartyDealFlow.Instigator
+import net.corda.core.node.CordaPluginRegistry
 
 /**
  * This whole class is really part of a demo just to initiate the agreement of a deal with a simple
@@ -24,7 +24,7 @@ import net.corda.flows.TwoPartyDealFlow.Instigator
 object AutoOfferFlow {
 
     class Plugin : CordaPluginRegistry() {
-        override val servicePlugins: List<Class<*>> = listOf(Service::class.java)
+        override val servicePlugins = listOf(::Service)
     }
 
 

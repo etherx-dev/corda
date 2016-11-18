@@ -6,7 +6,6 @@ import javafx.beans.value.ObservableValue
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import javafx.collections.transformation.TransformationList
-import org.eclipse.jetty.server.Authentication
 import java.util.*
 import kotlin.test.assertEquals
 

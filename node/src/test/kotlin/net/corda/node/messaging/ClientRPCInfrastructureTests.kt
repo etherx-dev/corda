@@ -1,6 +1,7 @@
-package net.corda.client
+package net.corda.node.messaging
 
-import net.corda.client.impl.CordaRPCClientImpl
+import net.corda.core.messaging.RPCOps
+import net.corda.core.messaging.RPCReturnsObservables
 import net.corda.core.millis
 import net.corda.core.random63BitValue
 import net.corda.core.serialization.SerializedBytes
@@ -69,6 +70,7 @@ class ClientRPCInfrastructureTests {
         serverSession.createTemporaryQueue(RPC_REQUESTS_QUEUE, RPC_REQUESTS_QUEUE)
         producer = serverSession.createProducer()
         val userService = object : RPCUserService {
+            override fun addSystemUserPermission(permission: String) = throw UnsupportedOperationException()
             override fun getUser(username: String): User? = throw UnsupportedOperationException()
             override val users: List<User> get() = throw UnsupportedOperationException()
         }

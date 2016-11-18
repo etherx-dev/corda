@@ -12,14 +12,14 @@ class RPCUserServiceImplTest {
     fun `missing config`() {
         val service = loadWithContents("{}")
         assertThat(service.getUser("user")).isNull()
-        assertThat(service.users).isEmpty()
+        assertThat(service.users.map { it.username }).containsOnly(RPCUserService.systemUserUsername)
     }
 
     @Test
-    fun `no users`() {
+    fun `no users, only system user`() {
         val service = loadWithContents("rpcUsers : []")
         assertThat(service.getUser("user")).isNull()
-        assertThat(service.users).isEmpty()
+        assertThat(service.users.map { it.username }).containsOnly(RPCUserService.systemUserUsername)
     }
 
     @Test
@@ -27,7 +27,7 @@ class RPCUserServiceImplTest {
         val service = loadWithContents("rpcUsers : [{ user=user1, password=letmein }]")
         val expectedUser = User("user1", "letmein", permissions = emptySet())
         assertThat(service.getUser("user1")).isEqualTo(expectedUser)
-        assertThat(service.users).containsOnly(expectedUser)
+        assertThat(service.users).contains(expectedUser)
     }
 
     @Test
@@ -52,7 +52,7 @@ class RPCUserServiceImplTest {
         val user2 = User("user2", "password2", permissions = emptySet())
         assertThat(service.getUser("user")).isEqualTo(user1)
         assertThat(service.getUser("user2")).isEqualTo(user2)
-        assertThat(service.users).containsOnly(user1, user2)
+        assertThat(service.users).contains(user1, user2)
     }
 
     @Test
